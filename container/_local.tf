@@ -29,15 +29,14 @@ locals {
         security_groups = [for c_k, c_v in r_v.ref_key.security_group_names : local.remote_state.network.security_groups[c_v].id]
       }) }
       target_group = {
-        front = {}
+        front = { for r_k, r_v in local.container_context.lb.target_group.front : r_k => merge(r_v, {
+          vpc_id = local.remote_state.network.vpc.id
+        }) }
         back = { for r_k, r_v in local.container_context.lb.target_group.back : r_k => merge(r_v, {
           vpc_id = local.remote_state.network.vpc.id
         }) }
       }
-      listener = {
-        front = {}
-        back  = local.container_context.lb.listener.back
-      }
+      listener = { for k, v in local.container_context.lb.listener : k => v }
     }
     ssm_parameter = {
       ecr = local.ssm_parameter_context.ecr
@@ -115,20 +114,11 @@ locals {
         "name",
         "port",
         "vpc_id",
-        "protocol",
-        "target_type",
-        "health_check",
-        "ip_address_type",
-        "protocol_version",
-        "load_balancing_algorithm_type",
       ]
       listener = [
         "id",
         "arn",
         "port",
-        "protocol",
-        "ssl_policy",
-        "default_action",
         "load_balancer_arn",
       ]
     }
@@ -149,15 +139,16 @@ locals {
       service         = { for r_k, r_v in aws_ecs_service.this : r_k => { for c_k, c_v in r_v : c_k => c_v if contains(local.search_set.ecs.service, c_k) } }
     }
     lb = {
-      L7 = { for r_k, r_v in aws_lb.this : r_k => { for c_k, c_v in r_v : c_k => c_v if contains(local
-      .search_set.lb.L7, c_k) } }
+      L7 = { for r_k, r_v in aws_lb.this : r_k => { for c_k, c_v in r_v : c_k => c_v if contains(local.search_set.lb.L7, c_k) } }
       target_group = {
-        front = {}
+        front = { for r_k, r_v in aws_lb_target_group.front : r_k => { for c_k, c_v in r_v : c_k => c_v if contains
+        (local.search_set.lb.target_group, c_k) } }
         back = { for r_k, r_v in aws_lb_target_group.back : r_k => { for c_k, c_v in r_v : c_k => c_v if contains
         (local.search_set.lb.target_group, c_k) } }
       }
       listener = {
-        front = {}
+        front = { for r_k, r_v in aws_lb_listener.front : r_k => { for c_k, c_v in r_v : c_k => c_v if contains(local
+        .search_set.lb.listener, c_k) } }
         back = { for r_k, r_v in aws_lb_listener.back : r_k => { for c_k, c_v in r_v : c_k => c_v if contains(local
         .search_set.lb.listener, c_k) } }
       }
