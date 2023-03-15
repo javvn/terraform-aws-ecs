@@ -28,15 +28,9 @@ locals {
   }
 
   ssm_parameter = {
-    s3_bucket = data.aws_ssm_parameter.s3_bucket.value
-    ecs_cluster_name = {
-      front = null
-      back  = data.aws_ssm_parameter.ecs_cluster["back"].value
-    }
-    ecs_service_name = {
-      front = null
-      back  = data.aws_ssm_parameter.ecs_service["back"].value
-    }
+    s3_bucket        = data.aws_ssm_parameter.s3_bucket.value
+    ecs_cluster_name = { for k, v in data.aws_ssm_parameter.ecs_cluster : k => v.value }
+    ecs_service_name = { for k, v in data.aws_ssm_parameter.ecs_service : k => v.value }
   }
 
   remote_state = { for k, v in data.terraform_remote_state.this : k => v["outputs"] }
