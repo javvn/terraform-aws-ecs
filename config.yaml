@@ -1,0 +1,1284 @@
+context:
+  env      : development
+  name     : labecs
+  region   : use1
+  owner    : jawn
+  project  : labecs
+  terraform: true
+  azs      :
+    - use1-az1
+    - use1-az2
+
+remote_path :
+  network   : ../network/terraform.tfstate
+  log       : ../log/terraform.tfstate
+  pipeline  : ../pipeline/terraform.tfstate
+  container : ../container/terraform.tfstate
+
+######################################################
+# NETWORK : VPC
+######################################################
+network:
+  vpc                         :
+    create                    : true
+    name                      : "${name}-vpc"
+    cidr_block                : 10.200.0.0/16
+    instance_tenancy          : default
+    enable_dns_hostnames      : true
+  igw:
+    name                      : "${name}-igw"
+  subnet_groups                   :
+    ingress                     :
+      - name                    : "${name}-pub-ingress-${azs[0]}"
+        cidr_block              : 10.200.10.0/24
+        availability_zone_id    : ${azs[0]}
+        map_public_ip_on_launch : true
+      - name                    : "${name}-pub-ingress-${azs[1]}"
+        cidr_block              : 10.200.11.0/24
+        availability_zone_id    : ${azs[1]}
+        map_public_ip_on_launch : true
+    management:
+      - name                    : "${name}-pub-management-${azs[0]}"
+        cidr_block              : "10.200.50.0/24"
+        availability_zone_id    : ${azs[0]}
+        map_public_ip_on_launch : true
+      - name                    : "${name}-pub-management-${azs[1]}"
+        cidr_block              : "10.200.51.0/24"
+        availability_zone_id    : ${azs[1]}
+        map_public_ip_on_launch : true
+    container                   :
+      - name                    : "${name}-pri-container-${azs[0]}"
+        cidr_block              : "10.200.101.0/24"
+        availability_zone_id    : ${azs[0]}
+        map_public_ip_on_launch : false
+      - name                    : "${name}-pri-container-${azs[1]}"
+        cidr_block              : "10.200.102.0/24"
+        availability_zone_id    : ${azs[1]}
+        map_public_ip_on_launch : false
+    vpce:
+      - name                    : "${name}-pri-vpce-${azs[0]}"
+        cidr_block              : "10.200.151.0/24"
+        availability_zone_id    : ${azs[0]}
+        map_public_ip_on_launch : false
+      - name                    : "${name}-pri-vpce-${azs[1]}"
+        cidr_block              : "10.200.152.0/24"
+        availability_zone_id    : ${azs[1]}
+        map_public_ip_on_launch : false
+    db:
+      - name                    : "${name}-pri-db-${azs[0]}"
+        cidr_block              : "10.200.201.0/24"
+        availability_zone_id    : ${azs[0]}
+        map_public_ip_on_launch : false
+      - name                    : "${name}-pri-db-${azs[1]}"
+        cidr_block              : "10.200.202.0/24"
+        availability_zone_id    : ${azs[1]}
+        map_public_ip_on_launch : false
+  route_table        :
+    ingress          :
+      name           : "${name}-rt-ingress"
+      route          :
+        - cidr_block : "0.0.0.0/0"
+    container        :
+      name           : "${name}-rt-container"
+      route          : []
+    db               :
+      name           : "${name}-rt-db"
+      route          : []
+  security_groups                 :
+    ingress                       :
+      name                        : "${name}-sg-ingress"
+      description                 : "Security group for ingress"
+    management                    :
+      name                        : "${name}-sg-management"
+      description                 : "Security group for management"
+    front                         :
+      name                        : "${name}-sg-front"
+      description                 : "Security group for front"
+    internal                      :
+      name                        : "${name}-sg-internal"
+      description                 : "Security group for internal lb"
+    container                     :
+      name                        : "${name}-sg-container"
+      description                 : "Security group for back container"
+    db                            :
+      name                        : "${name}-sg-db"
+      description                 : "Security group for db"
+    vpce                          :
+      name                        : "${name}-sg-vpce"
+      description                 : "Security group for vpce"
+  security_group_rules          :
+    - key                       : ingress
+      type                      : ingress
+      description               : from 0.0.0.0/0:0
+      from_port                 : 0
+      to_port                   : 0
+      protocol                  : -1
+      ref                       : cidr_blocks
+      cidr_blocks               :
+        - 0.0.0.0/0
+      source_security_group_id  : null
+    - key                       : ingress
+      type                      : egress
+      description               : Allow all outbound traffic by default
+      from_port                 : 0
+      to_port                   : 0
+      protocol                  : -1
+      ref                       : cidr_blocks
+      cidr_blocks               :
+        - 0.0.0.0/0
+      source_security_group_id  : null
+    - key                       : management
+      type                      : ingress
+      description               : from 0.0.0.0/0:22
+      from_port                 : 22
+      to_port                   : 22
+      protocol                  : tcp
+      ref                       : cidr_blocks
+      cidr_blocks               :
+        - 0.0.0.0/0
+      source_security_group_id  : null
+    - key                       : management
+      type                      : egress
+      description               : Allow all outbound traffic by default
+      from_port                 : 0
+      to_port                   : 0
+      protocol                  : -1
+      ref                       : cidr_blocks
+      cidr_blocks               :
+        - 0.0.0.0/0
+      source_security_group_id  : null
+    - key                       : front
+      type                      : ingress
+      description               : HTTP for ingress
+      from_port                 : 80
+      to_port                   : 80
+      protocol                  : tcp
+      ref                       : source_security_group_id
+      cidr_blocks               : []
+      source_security_group_id  : ingress
+    - key                       : front
+      type                      : egress
+      description               : Allow all outbound traffic by default
+      from_port                 : 0
+      to_port                   : 0
+      protocol                  : -1
+      ref                       : cidr_blocks
+      cidr_blocks               :
+        - 0.0.0.0/0
+      source_security_group_id  : null
+    - key                       : internal
+      type                      : ingress
+      description               : EXPRESS PROD for front
+      from_port                 : 3000
+      to_port                   : 3000
+      protocol                  : tcp
+      ref                       : source_security_group_id
+      cidr_blocks               : null
+      source_security_group_id  : front
+    - key                       : internal
+      type                      : ingress
+      description               : EXPRESS PROD for management
+      from_port                 : 3000
+      to_port                   : 3000
+      protocol                  : tcp
+      ref                       : source_security_group_id
+      cidr_blocks               : null
+      source_security_group_id  : management
+    - key                       : internal
+      type                      : ingress
+      description               : EXPRESS STAGE for management
+      from_port                 : 13000
+      to_port                   : 13000
+      protocol                  : tcp
+      ref                       : source_security_group_id
+      cidr_blocks               : null
+      source_security_group_id  : management
+    - key                       : internal
+      type                      : egress
+      description               : Allow all outbound traffic by default
+      from_port                 : 0
+      to_port                   : 0
+      protocol                  : -1
+      ref                       : cidr_blocks
+      cidr_blocks               :
+        - 0.0.0.0/0
+      source_security_group_id  : null
+    - key                       : container
+      type                      : ingress
+      description               : EXPRESS PROD for internal
+      from_port                 : 3000
+      to_port                   : 3000
+      protocol                  : tcp
+      ref                       : source_security_group_id
+      cidr_blocks               : null
+      source_security_group_id  : internal
+    - key                       : container
+      type                      : ingress
+      description               : EXPRESS STAGE for internal
+      from_port                 : 13000
+      to_port                   : 13000
+      protocol                  : tcp
+      ref                       : source_security_group_id
+      cidr_blocks               : null
+      source_security_group_id  : internal
+    - key                       : container
+      type                      : egress
+      description               : Allow all outbound traffic by default
+      from_port                 : 0
+      to_port                   : 0
+      protocol                  : -1
+      ref                       : cidr_blocks
+      cidr_blocks               :
+        - 0.0.0.0/0
+      source_security_group_id  : null
+    - key                       : db
+      type                      : ingress
+      description               : DB for container
+      from_port                 : 3306
+      to_port                   : 3306
+      protocol                  : tcp
+      ref                       : source_security_group_id
+      cidr_blocks               : null
+      source_security_group_id  : container
+    - key                       : db
+      type                      : ingress
+      description               : DB for management
+      from_port                 : 3306
+      to_port                   : 3306
+      protocol                  : tcp
+      ref                       : source_security_group_id
+      cidr_blocks               : null
+      source_security_group_id  : management
+    - key                       : db
+      type                      : egress
+      description               : Allow all outbound traffic by default
+      from_port                 : 0
+      to_port                   : 0
+      protocol                  : -1
+      ref                       : cidr_blocks
+      cidr_blocks               :
+        - 0.0.0.0/0
+      source_security_group_id  : null
+    - key                       : vpce
+      type                      : ingress
+      description               : VPC_ENDPOINT for front
+      from_port                 : 443
+      to_port                   : 443
+      protocol                  : tcp
+      ref                       : source_security_group_id
+      cidr_blocks               : null
+      source_security_group_id  : front
+    - key                       : vpce
+      type                      : ingress
+      description               : VPC_ENDPOINT for management
+      from_port                 : 443
+      to_port                   : 443
+      protocol                  : tcp
+      ref                       : source_security_group_id
+      cidr_blocks               : null
+      source_security_group_id  : management
+    - key                       : vpce
+      type                      : ingress
+      description               : VPC_ENDPOINT for container
+      from_port                 : 443
+      to_port                   : 443
+      protocol                  : tcp
+      ref                       : source_security_group_id
+      cidr_blocks               : null
+      source_security_group_id  : container
+    - key                       : vpce
+      type                      : egress
+      description               : Allow all outbound traffic by default
+      from_port                 : 0
+      to_port                   : 0
+      protocol                  : -1
+      ref                       : cidr_blocks
+      cidr_blocks               :
+        - 0.0.0.0/0
+      source_security_group_id  : null
+    - key                       : front
+      type                      : ingress
+      description               : HTTP for ingress
+      from_port                 : 60080
+      to_port                   : 60080
+      protocol                  : tcp
+      ref                       : source_security_group_id
+      cidr_blocks               : []
+      source_security_group_id  : ingress
+  vpc_endpoint            :
+    create                : false
+    endpoints             :
+      - service_name      : com.amazonaws.us-east-1.ecr.api
+        vpc_endpoint_type : Interface
+        ip_address_type   : ipv4
+      - service_name      : com.amazonaws.us-east-1.ecr.dkr
+        vpc_endpoint_type : Interface
+        ip_address_type   : ipv4
+      - service_name      : com.amazonaws.us-east-1.logs
+        vpc_endpoint_type : Interface
+        ip_address_type   : ipv4
+      - service_name      : com.amazonaws.us-east-1.s3
+        vpc_endpoint_type : Gateway
+
+######################################################
+# EC2 : INSTANCE , EIP
+######################################################
+ec2:
+  ami:
+    bastion:
+      most_recent: true
+      filter:
+        name:
+          values:
+            - amzn2-ami-kernel*
+  instance:
+    bastion:
+      name                : "${name}-bastion"
+      instance_type       : t2.micro
+      key_name            : labecs_ec2
+      user_data           : scripts/userdata.sh
+      monitoring          : true
+      subnet_name         : management
+      security_group_names :
+        - management
+  eip:
+    bastion:
+      vpc: true
+  state: {}
+
+######################################################
+# LOG : CW , S3
+######################################################
+log:
+  s3                          :
+    bucket                    : "${name}-devops"
+    force_destroy             : true
+    public_access_block       :
+      block_public_acls       : true
+      block_public_policy     : true
+      ignore_public_acls      : true
+      restrict_public_buckets : true
+    policy:
+      Version: "2012-10-17"
+      Statement:
+        - Effect : Allow
+          Principal:
+            AWS: arn:aws:iam::127311923021:root
+          Action: s3:*
+          Resource: "arn:aws:s3:::${name}-devops/*"
+  cw_log:
+    pipeline                     : &cw_log_pipeline
+      group_name                 : "/${name}/pipeline"
+      cloud_watch_log_group_name : "/${name}/pipeline"
+      retention_in_days          : 1
+      skip_destroy               : false
+    ecs                          : &cw_log_ecs
+      cloud_watch_log_group_name : "/${name}/ecs"
+      retention_in_days          : 1
+      skip_destroy               : false
+
+######################################################
+# SSM PARAMETER
+######################################################
+ssm_parameter:
+  ecr:
+    repository_url :
+      back         :
+        key        : repository_url
+        name       : &ssm_parameter_ecr_back_repository_uri "/${name}/ecr/back/repository_url"
+        type       : String
+        data_type  : text
+      front        :
+        key        : repository_url
+        name       : &ssm_parameter_ecr_front_repository_uri "/${name}/ecr/front/repository_url"
+        type       : String
+        data_type  : text
+  ecs:
+    cluster_names         :
+      back                :
+        key               : name
+        name              : "/${name}/ecs/back/cluster_name"
+        type              : String
+        data_type         : text
+      front               :
+        key               : name
+        name              : "/${name}/ecs/front/cluster_name"
+        type              : String
+        data_type         : text
+    service_names         :
+      back                :
+        key               : name
+        name              : "/${name}/ecs/back/service_name"
+        type              : String
+        data_type         : text
+      front               :
+        key               : name
+        name              : "/${name}/ecs/front/service_name"
+        type              : String
+        data_type         : text
+    task_definition_names :
+      back                :
+        key               : family
+        name              : &ssm_parameter_ecs_back_task_definition_name "/${name}/ecs/back/task_definition_name"
+        type              : String
+        data_type         : text
+      front               :
+        key               : family
+        name              : &ssm_parameter_ecs_front_task_definition_name "/${name}/ecs/front/task_definition_name"
+        type              : String
+        data_type         : text
+  log:
+    group_names:
+      ecs:
+        name: &ssm_parameter_cw_ecs_group_name "/${name}/cw/ecs/group_name"
+        type: String
+        data_type: text
+      pipeline:
+        name: &ssm_parameter_cw_pipeline_group_name "/${name}/cw/pipeline/group_name"
+        type: String
+        data_type: text
+  s3:
+    bucket      :
+      name      : &ssm_parameter_s3_bucket "/${name}/s3/bucket"
+      type      : String
+      data_type : text
+  lb                :
+    listener_arns   :
+      back          :
+        BLUE        :
+          key       : arn
+          name      : &ssm_parameter_lb_back_blue_listener_arn "/${name}/lb/listener/back/blue/arn"
+          type      : String
+          data_type : text
+        GREEN       :
+          key       : arn
+          name      : &ssm_parameter_lb_back_green_listener_arn "/${name}/lb/listener/back/green/arn"
+          type      : String
+          data_type : text
+      front         :
+        BLUE        :
+          key       : arn
+          name      : &ssm_parameter_lb_front_blue_listener_arn "/${name}/lb/listener/front/blue/arn"
+          type      : String
+          data_type : text
+        GREEN       :
+          key       : arn
+          name      : &ssm_parameter_lb_front_green_listener_arn "/${name}/lb/listener/front/green/arn"
+          type      : String
+          data_type : text
+    target_group_names :
+      back             :
+        BLUE           :
+          key          : name
+          name         : &ssm_parameter_lb_back_blue_target_group_names "/${name}/lb/tg/back/blue/name"
+          type         : String
+          data_type    : text
+        GREEN          :
+          key          : name
+          name         : &ssm_parameter_lb_back_green_target_group_names "/${name}/lb/tg/back/green/name"
+          type         : String
+          data_type    : text
+      front            :
+        BLUE           :
+          key          : name
+          name         : &ssm_parameter_lb_front_blue_target_group_names "/${name}/lb/tg/front/blue/name"
+          type         : String
+          data_type    : text
+        GREEN          :
+          key          : name
+          name         : &ssm_parameter_lb_front_green_target_group_names "/${name}/lb/tg/front/green/name"
+          type         : String
+          data_type    : text
+
+######################################################
+# APP : ECR, ECS, ALB
+######################################################
+container                            :
+  ecr                                :
+    private                          :
+      back                           :
+        name                         : "${name}-back"
+        image_tag_mutability         : MUTABLE
+        force_delete                 : true
+        image_scanning_configuration :
+          scan_on_push               : true
+        encryption_configuration     :
+          encryption_type            : KMS
+          kms_key                    : ""
+      front                          :
+        name                         : "${name}-front"
+        image_tag_mutability         : MUTABLE
+        force_delete                 : true
+        image_scanning_configuration :
+          scan_on_push               : true
+        encryption_configuration     :
+          encryption_type            : KMS
+          kms_key                    : ""
+    public                  :
+      node                  :
+        repository_name     : "${name}-node"
+        catalog_data        :
+          description       : "The public repository for ${name} nodejs"
+          about_text        : null
+          logo_image_blob   : null
+          usage_text        : null
+          operating_systems :
+            - Linux
+          architectures     :
+            - ARM
+            - ARM 64
+            - x86
+            - x86-64
+        timeouts            :
+          delete            : 2m
+      nginx                 :
+        repository_name     : "${name}-nginx"
+        catalog_data        :
+          description       : "The public repository for ${name} nginx"
+          about_text        : null
+          logo_image_blob   : null
+          usage_text        : null
+          operating_systems :
+            - Linux
+          architectures     :
+            - ARM
+            - ARM 64
+            - x86
+            - x86-64
+        timeouts            :
+          delete            : 2m
+  lb                                :
+    L7                              :
+      back                          :
+        name                        : "${name}-lb-internal"
+        internal                    : true
+        ip_address_type             : ipv4
+        load_balancer_type          : application
+        enable_deletion_protection  : false
+        ref_key                     :
+          subnet_name               : container
+          security_group_names      :
+            - internal
+        access_logs                 :
+          bucket                    : "${name}-devops"
+          prefix                    : alb/internal
+          enabled                   : true
+      front                         :
+        name                        : "${name}-lb-ingress"
+        internal                    : false
+        ip_address_type             : ipv4
+        load_balancer_type          : application
+        enable_deletion_protection  : false
+        ref_key                     :
+          subnet_name               : ingress
+          security_group_names      :
+            - ingress
+        access_logs                 :
+          bucket                    : "${name}-devops"
+          prefix                    : alb/ingress
+          enabled                   : true
+    listener                :
+      back                  :
+        BLUE                :
+          name              : "${name}-lb-internal-listener-blue"
+          port              : 3000
+          protocol          : HTTP
+          ssl_policy        : ""
+          default_action    :
+            type            : forward
+        GREEN               :
+          name              : "${name}-lb-internal-listener-green"
+          port              : 13000
+          protocol          : HTTP
+          ssl_policy        : ""
+          default_action    :
+            type            : forward
+      front                 :
+        BLUE                :
+          name              : "${name}-lb-ingress-listener-blue"
+          port              : 80
+          protocol          : HTTP
+          ssl_policy        : ""
+          default_action    :
+            type            : forward
+        GREEN               :
+          name              : "${name}-lb-ingress-listener-green"
+          port              : 60080
+          protocol          : HTTP
+          ssl_policy        : ""
+          default_action    :
+            type            : forward
+    target_group                        :
+      back                              :
+        BLUE                            :
+          name                          : "${name}-lb-internal-tg-blue"
+          port                          : 3000
+          protocol                      : HTTP
+          protocol_version              : HTTP1
+          target_type                   : ip
+          ip_address_type               : ipv4
+          load_balancing_algorithm_type : round_robin
+          health_check                  :
+            enabled                     : true
+            protocol                    : HTTP
+            path                        : /
+            port                        : 3000
+            healthy_threshold           : 3
+            unhealthy_threshold         : 2
+            timeout                     : 10
+            interval                    : 30
+        GREEN:
+          name                          : "${name}-lb-internal-tg-green"
+          port                          : 3000
+          protocol                      : HTTP
+          protocol_version              : HTTP1
+          target_type                   : ip
+          ip_address_type               : ipv4
+          load_balancing_algorithm_type : round_robin
+          health_check                  :
+            enabled                     : true
+            protocol                    : HTTP
+            path                        : /
+            port                        : 3000
+            healthy_threshold           : 3
+            unhealthy_threshold         : 2
+            timeout                     : 10
+            interval                    : 30
+      front                             :
+        BLUE                            :
+          name                          : "${name}-lb-ingress-tg-blue"
+          port                          : 80
+          protocol                      : HTTP
+          protocol_version              : HTTP1
+          target_type                   : ip
+          ip_address_type               : ipv4
+          load_balancing_algorithm_type : round_robin
+          health_check                  :
+            enabled                     : true
+            protocol                    : HTTP
+            path                        : /
+            port                        : 80
+            healthy_threshold           : 3
+            unhealthy_threshold         : 2
+            timeout                     : 10
+            interval                    : 30
+        GREEN:
+          name                          : "${name}-lb-ingress-tg-green"
+          port                          : 80
+          protocol                      : HTTP
+          protocol_version              : HTTP1
+          target_type                   : ip
+          ip_address_type               : ipv4
+          load_balancing_algorithm_type : round_robin
+          health_check                  :
+            enabled                     : true
+            protocol                    : HTTP
+            path                        : /
+            port                        : 80
+            healthy_threshold           : 3
+            unhealthy_threshold         : 2
+            timeout                     : 10
+            interval                    : 30
+  ecs:
+    back                                   :
+      name                                 : "${name}-back-cluster"
+      configuration                        :
+        execute_command_configuration      :
+          logging                          : OVERRIDE
+          log_configuration                :
+            cloud_watch_encryption_enabled : false
+            <<: *cw_log_ecs
+      fargate_capacity_providers           :
+        capacity_providers                 :
+          - FARGATE
+        default_capacity_provider_strategy :
+          FARGATE                          :
+            base                           : 0
+            weight                         : 50
+    front                                  :
+      name                                 : "${name}-front-cluster"
+      configuration                        :
+        execute_command_configuration      :
+          logging                          : OVERRIDE
+          log_configuration                :
+            cloud_watch_encryption_enabled : false
+            <<: *cw_log_ecs
+      fargate_capacity_providers           :
+        capacity_providers                 :
+          - FARGATE
+        default_capacity_provider_strategy :
+          FARGATE                          :
+            base                           : 0
+            weight                         : 50
+  ecs_task_definition               :
+    back                            :
+      family                        : "${name}-back-def"
+      cpu                           : 512
+      memory                        : 1024
+      network_mode                  : awsvpc
+      task_role_arn                 : null
+      execution_role_arn            : arn:aws:iam::369463259913:role/ecsTaskExecutionRole
+      requires_compatibilities      :
+        - FARGATE
+      container_definitions         :
+        - name                      : express
+          cpu                       : 100
+          memory                    : 100
+          essential                 : true
+          healthCheck               :
+            command                 :
+              - CMD-SHELL
+              - curl -f http://localhost:3000 || exit 1
+            interval                : 300
+            startPeriod             : 30
+            retries                 : 3
+            timeout                 : 3
+          logConfiguration          :
+            logDriver               : awslogs
+            options                 :
+              awslogs-group         : "/${name}/ecs"
+              awslogs-region        : us-east-1
+              awslogs-stream-prefix : back
+          portMappings              :
+            - name                  : express
+              protocol              : tcp
+              containerPort         : 3000
+              hostPort              : 3000
+      runtime_platform              :
+        operating_system_family     : LINUX
+        cpu_architecture            : ARM64
+    front                           :
+      family                        : "${name}-front-def"
+      cpu                           : 512
+      memory                        : 1024
+      network_mode                  : awsvpc
+      task_role_arn                 : null
+      execution_role_arn            : arn:aws:iam::369463259913:role/ecsTaskExecutionRole
+      requires_compatibilities      :
+        - FARGATE
+      container_definitions         :
+        - name                      : react
+          cpu                       : 100
+          memory                    : 100
+          essential                 : true
+          healthCheck               :
+            command                 :
+              - CMD-SHELL
+              - curl -f http://localhost || exit 1
+            interval                : 300
+            startPeriod             : 30
+            retries                 : 3
+            timeout                 : 3
+          logConfiguration          :
+            logDriver               : awslogs
+            options                 :
+              awslogs-group         : "/${name}/ecs"
+              awslogs-region        : us-east-1
+              awslogs-stream-prefix : front
+          portMappings              :
+            - name                  : react
+              protocol              : tcp
+              containerPort         : 80
+              hostPort              : 80
+      runtime_platform              :
+        operating_system_family     : LINUX
+        cpu_architecture            : ARM64
+  ecs_service                             :
+    back                                  :
+      name                                : "${name}-back-service"
+      launch_type                         : FARGATE
+      desired_count                       : 1
+      platform_version                    : "1.4.0"
+      scheduling_strategy                 : REPLICA
+      deployment_maximum_percent          : 200
+      deployment_minimum_healthy_percent  : 100
+      health_check_grace_period_seconds   : 180
+      deployment_controller_type          : CODE_DEPLOY
+      deployment_circuit_breaker          :
+        enable                            : false
+        rollback                          : false
+      network_configuration               :
+        assign_public_ip                  : false
+      load_balancer                       :
+        BLUE:
+          container_name                    : express
+          container_port                    : 3000
+      ref                                 :
+        cluster                           : back
+        task_definition                   : back
+        subnet_name                       : container
+        security_group_name               : container
+    front                                 :
+      name                                : "${name}-front-service"
+      launch_type                         : FARGATE
+      desired_count                       : 1
+      platform_version                    : "1.4.0"
+      scheduling_strategy                 : REPLICA
+      deployment_maximum_percent          : 200
+      deployment_minimum_healthy_percent  : 100
+      health_check_grace_period_seconds   : 180
+      deployment_controller_type          : CODE_DEPLOY
+      deployment_circuit_breaker          :
+        enable                            : false
+        rollback                          : false
+      network_configuration               :
+        assign_public_ip                  : false
+      load_balancer                       :
+        BLUE:
+          container_name                  : react
+          container_port                  : 80
+      ref                                 :
+        cluster                           : front
+        task_definition                   : front
+        subnet_name                       : container
+        security_group_name               : front
+
+######################################################
+# CI / CD : CodeSeries
+######################################################
+code_series             :
+  repository            :
+    back                :
+      name              : "${name}-back"
+      description       : The repository for back-end
+      default_branch    : main
+    front               :
+      name              : "${name}-front"
+      description       : The repository for front-end
+      default_branch    : main
+  build                                :
+    back                               :
+      name                             : "${name}-back"
+      description                      : The build project for back
+      badge_enabled                    : false
+      artifacts                        :
+        type                           : CODEPIPELINE
+        artifact_identifier            : TEST
+        override_artifact_name         : true
+      environment                      :
+        type                           : ARM_CONTAINER
+        image                          : aws/codebuild/amazonlinux2-aarch64-standard:2.0
+        compute_type                   : BUILD_GENERAL1_SMALL
+        privileged_mode                : true
+        environment_variable           :
+          SSM_S3_BUCKET                :
+            value                      : *ssm_parameter_s3_bucket
+            type                       : PLAINTEXT
+          SSM_ECR_REPOSITORY_URI       :
+            value                      : *ssm_parameter_ecr_back_repository_uri
+            type                       : PLAINTEXT
+          SSM_ECS_LOG_GROUP_NAME       :
+            value                      : *ssm_parameter_cw_ecs_group_name
+            type                       : PLAINTEXT
+          SSM_ECS_TASK_DEFINITION_NAME :
+            value                      : *ssm_parameter_ecs_back_task_definition_name
+            type                       : PLAINTEXT
+      source                           :
+        type                           : CODEPIPELINE
+      log_configs                      :
+        cloudwatch_logs                :
+          <<: *cw_log_pipeline
+          stream_name                  : build/back
+          status                       : ENABLED
+    front                              :
+      name                             : "${name}-front"
+      description                      : The build project for front
+      badge_enabled                    : false
+      artifacts                        :
+        type                           : CODEPIPELINE
+        artifact_identifier            : TEST
+        override_artifact_name         : true
+      environment                      :
+        type                           : ARM_CONTAINER
+        image                          : aws/codebuild/amazonlinux2-aarch64-standard:2.0
+        compute_type                   : BUILD_GENERAL1_SMALL
+        privileged_mode                : true
+        environment_variable           :
+          SSM_S3_BUCKET                :
+            value                      : *ssm_parameter_s3_bucket
+            type                       : PLAINTEXT
+          SSM_ECR_REPOSITORY_URI       :
+            value                      : *ssm_parameter_ecr_front_repository_uri
+            type                       : PLAINTEXT
+          SSM_ECS_LOG_GROUP_NAME       :
+            value                      : *ssm_parameter_cw_ecs_group_name
+            type                       : PLAINTEXT
+          SSM_ECS_TASK_DEFINITION_NAME :
+            value                      : *ssm_parameter_ecs_front_task_definition_name
+            type                       : PLAINTEXT
+      source                           :
+        type                           : CODEPIPELINE
+      log_configs                      :
+        cloudwatch_logs                :
+          <<: *cw_log_pipeline
+          stream_name                  : build/front
+          status                       : ENABLED
+  deploy                                                 :
+    app                                                  :
+      back                                               :
+        name                                             : "${name}-back"
+        compute_platform                                 : ECS
+      front                                              :
+        name                                             : "${name}-front"
+        compute_platform                                 : ECS
+    config                     :
+      back                     :
+        deployment_config_name : "${name}-back.ECSCanary10Percent1Minutes"
+        compute_platform       : ECS
+        traffic_routing_config :
+          type                 : TimeBasedCanary
+          time_based_canary    :
+            interval           : 1
+            percentage         : 10
+      front                    :
+        deployment_config_name : "${name}-front.ECSCanary10Percent1Minutes"
+        compute_platform       : ECS
+        traffic_routing_config :
+          type                 : TimeBasedCanary
+          time_based_canary    :
+            interval           : 1
+            percentage         : 10
+    group                                                :
+      back                                               :
+        group_name                                       : "${name}-back"
+        service_role_index                               : CODEDEPLOY
+        auto_rollback_configuration                      :
+          enabled                                        : false
+          events                                         : []
+        blue_green_deployment_config                     :
+          deployment_ready_option                        :
+            action_on_timeout                            : CONTINUE_DEPLOYMENT
+          terminate_blue_instances_on_deployment_success :
+            action                                       : TERMINATE
+            termination_wait_time_in_minutes             : 3
+        deployment_style                                 :
+          deployment_option                              : WITH_TRAFFIC_CONTROL
+          deployment_type                                : BLUE_GREEN
+        ecs_service                                      :
+          cluster_name_key                               : ecs_cluster_name
+          service_name_key                               : ecs_service_name
+      front                                              :
+        group_name                                       : "${name}-front"
+        service_role_index                               : CODEDEPLOY
+        auto_rollback_configuration                      :
+          enabled                                        : false
+          events                                         : []
+        blue_green_deployment_config                     :
+          deployment_ready_option                        :
+            action_on_timeout                            : CONTINUE_DEPLOYMENT
+          terminate_blue_instances_on_deployment_success :
+            action                                       : TERMINATE
+            termination_wait_time_in_minutes             : 3
+        deployment_style                                 :
+          deployment_option                              : WITH_TRAFFIC_CONTROL
+          deployment_type                                : BLUE_GREEN
+        ecs_service                                      :
+          cluster_name_key                               : ecs_cluster_name
+          service_name_key                               : ecs_service_name
+  pipeline                                   :
+    back                                     :
+      name                                   : "${name}-back"
+      role_index                             : CODEPIPELINE
+      artifacts                              :
+        location                             : ""
+        type                                 : S3
+      stages                                 :
+        A                                    :
+          stage_name                         : Source
+          action                             :
+            category                         : Source
+            name                             : Source
+            owner                            : AWS
+            provider                         : CodeCommit
+            version                          : 1
+            input_artifacts                  : []
+            output_artifacts                 :
+              - source_output
+            configuration                    :
+              RepositoryName                 : "${name}-back"
+              BranchName                     : main
+        B                                    :
+          stage_name                         : Build
+          action                             :
+            category                         : Build
+            name                             : Build
+            owner                            : AWS
+            provider                         : CodeBuild
+            version                          : 1
+            input_artifacts                  :
+              - source_output
+            output_artifacts                 :
+              - build_output
+            configuration                    :
+              ProjectName                    : "${name}-back"
+        C                                    :
+          stage_name                         : Deploy
+          action                             :
+            category                         : Deploy
+            name                             : CodeDeployToECS
+            owner                            : AWS
+            provider                         : CodeDeployToECS
+            version                          : 1
+            input_artifacts                  :
+              - build_output
+            output_artifacts                 : []
+            configuration                    :
+              ApplicationName                : "${name}-back"
+              DeploymentGroupName            : "${name}-back"
+              TaskDefinitionTemplateArtifact : build_output
+              AppSpecTemplateArtifact        : build_output
+    front                                    :
+      name                                   : "${name}-front"
+      role_index                             : CODEPIPELINE
+      artifacts                              :
+        location                             : ""
+        type                                 : S3
+      stages                                 :
+        A                                    :
+          stage_name                         : Source
+          action                             :
+            category                         : Source
+            name                             : Source
+            owner                            : AWS
+            provider                         : CodeCommit
+            version                          : 1
+            input_artifacts                  : []
+            output_artifacts                 :
+              - source_output
+            configuration                    :
+              RepositoryName                 : "${name}-front"
+              BranchName                     : main
+        B                                    :
+          stage_name                         : Build
+          action                             :
+            category                         : Build
+            name                             : Build
+            owner                            : AWS
+            provider                         : CodeBuild
+            version                          : 1
+            input_artifacts                  :
+              - source_output
+            output_artifacts                 :
+              - build_output
+            configuration                    :
+              ProjectName                    : "${name}-front"
+        C                                    :
+          stage_name                         : Deploy
+          action                             :
+            category                         : Deploy
+            name                             : CodeDeployToECS
+            owner                            : AWS
+            provider                         : CodeDeployToECS
+            version                          : 1
+            input_artifacts                  :
+              - build_output
+            output_artifacts                 : []
+            configuration                    :
+              ApplicationName                : "${name}-front"
+              DeploymentGroupName            : "${name}-front"
+              TaskDefinitionTemplateArtifact : build_output
+              AppSpecTemplateArtifact        : build_output
+
+
+######################################################
+# IAM : ROLE, POLICY
+######################################################
+iam:
+  role                   :
+    CODEBUILD            :
+      name               : "${name}-CodeBuildRole"
+      description        : Access for cloud watch logs, ecr, codecommit
+      assume_role_policy :
+        Version          : "2012-10-17"
+        Statement        :
+          - Effect       : Allow
+            Principal    :
+              Service    : codebuild.amazonaws.com
+            Action       : sts:AssumeRole
+    CODEDEPLOY           :
+      name               : "${name}-CodeDeployRole"
+      description        : Access for cloud watch logs, ecr, codecommit
+      assume_role_policy :
+        Version          : "2012-10-17"
+        Statement        :
+          - Effect       : Allow
+            Principal    :
+              Service    : codedeploy.amazonaws.com
+            Action       : sts:AssumeRole
+    CODEPIPELINE         :
+      name               : "${name}-CodePipelineRole"
+      description        : Access for cloud watch logs, ecr, ecs, codecommit, codebuild, codedeploy
+      assume_role_policy :
+        Version          : "2012-10-17"
+        Statement        :
+          - Effect       : Allow
+            Principal    :
+              Service    : codepipeline.amazonaws.com
+            Action       : sts:AssumeRole
+#     EC2                  :
+#       name               : "${name}-EC2Role"
+#       description        : Access for EC2
+#       assume_role_policy :
+#         Version          : "2012-10-17"
+#         Statement        :
+#           - Effect       : Allow
+#             Principal    :
+#               Service    : ec2.amazonaws.com
+#             Action       : sts:AssumeRole
+  policy               :
+    CODEBUILD          :
+      name             : "${name}-CodeBuildAccess"
+      statements       :
+        Version        : "2012-10-17"
+        Statement      :
+          - Sid        : SSMPolicy
+            Effect     : Allow
+            Resource   :
+              - "*"
+            Action     :
+              - ssm:GetParameters
+          - Sid        : CloudWatchLogsPolicy
+            Effect     : Allow
+            Resource   :
+              - "*"
+            Action     :
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - s3:ListBucket
+              - s3:PutObject
+              - s3:GetObject
+          - Sid        : ECRPolicy
+            Effect     : Allow
+            Resource   :
+              - "*"
+            Action     :
+              - ecr:BatchCheckLayerAvailability
+              - ecr:CompleteLayerUpload
+              - ecr:GetAuthorizationToken
+              - ecr:InitiateLayerUpload
+              - ecr:PutImage
+              - ecr:UploadLayerPart
+          - Sid        : RepositoryPolicy
+            Effect     : Allow
+            Resource   :
+              - "*"
+            Action     :
+              - codecommit:GetBranch
+              - codecommit:GetCommit
+    CODEDEPLOY         :
+      name             : "${name}-CodeDeployAccess"
+      statements       :
+        Version        : "2012-10-17"
+        Statement      :
+          - Sid        : CloudWatchLogsPolicy
+            Effect     : Allow
+            Resource   :
+              - "*"
+            Action     :
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - s3:List*
+              - s3:Get*
+              - s3:PutObject
+              - iam:PassRole
+          - Sid        : ECRPolicy
+            Effect     : Allow
+            Resource   :
+              - "*"
+            Action     :
+              - elasticloadbalancing:DescribeTargetGroups
+              - elasticloadbalancing:DescribeListeners
+              - elasticloadbalancing:ModifyListener
+              - elasticloadbalancing:DescribeRules
+              - elasticloadbalancing:ModifyRule
+          - Sid        : ELBPolicy
+            Effect     : Allow
+            Resource   :
+              - "*"
+            Action     :
+              - ecr:BatchCheckLayerAvailability
+              - ecr:CompleteLayerUpload
+              - ecr:GetAuthorizationToken
+              - ecr:InitiateLayerUpload
+              - ecr:PutImage
+              - ecr:UploadLayerPart
+          - Sid        : ECSPolicy
+            Effect     : Allow
+            Resource   :
+              - "*"
+            Action     :
+              - ecs:Describe*
+              - ecs:List*
+              - ecs:CreateTaskSet
+              - ecs:DeleteTaskSet
+              - ecs:RegisterTaskDefinition
+              - ecs:UpdateServicePrimaryTaskSet
+    CODEPIPELINE     :
+      name           : "${name}-CodePipelineAccess"
+      statements     :
+        Version      : "2012-10-17"
+        Statement    :
+          - Sid      : RepositoryPolicy
+            Effect   : Allow
+            Resource : "*"
+            Action   :
+              - codecommit:GetBranch
+              - codecommit:GetCommit
+              - codecommit:UploadArchive
+              - codecommit:GetRepository
+              - codecommit:GetUploadArchiveStatus
+          - Sid      : BuildPolicy
+            Effect   : Allow
+            Resource : "*"
+            Action   :
+              - codebuild:StartBuild
+              - codebuild:BatchGetBuilds
+          - Sid      : DeployPolicy
+            Effect   : Allow
+            Resource : "*"
+            Action   :
+              - codedeploy:CreateDeployment
+              - codedeploy:GetApplication
+              - codedeploy:GetApplicationRevision
+              - codedeploy:GetDeployment
+              - codedeploy:GetDeploymentConfig
+              - codedeploy:RegisterApplicationRevision
+          - Sid        : ECRPolicy
+            Effect     : Allow
+            Resource   :
+              - "*"
+            Action     :
+              - ecr:BatchCheckLayerAvailability
+              - ecr:CompleteLayerUpload
+              - ecr:GetAuthorizationToken
+              - ecr:InitiateLayerUpload
+              - ecr:PutImage
+              - ecr:UploadLayerPart
+          - Sid        : CloudWatchLogsPolicy
+            Effect     : Allow
+            Resource   :
+              - "*"
+            Action     :
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - s3:List*
+              - s3:Get*
+              - s3:PutObject
+              - iam:PassRole
+          - Sid        : ECSPolicy
+            Effect     : Allow
+            Resource   :
+              - "*"
+            Action     :
+              - ecs:Describe*
+              - ecs:List*
+              - ecs:DeleteTaskSet
+              - ecs:RegisterTaskDefinition
+              - ecs:CreateTaskSet
+              - ecs:UpdateServicePrimaryTaskSet
+
+
+
