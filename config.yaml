@@ -186,9 +186,9 @@ network:
       source_security_group_id  : management
     - key                       : internal
       type                      : ingress
-      description               : EXPRESS STAGE for management
-      from_port                 : 13000
-      to_port                   : 13000
+      description               : EXPRESS DEV for management
+      from_port                 : 63000
+      to_port                   : 63000
       protocol                  : tcp
       ref                       : source_security_group_id
       cidr_blocks               : null
@@ -214,9 +214,9 @@ network:
       source_security_group_id  : internal
     - key                       : container
       type                      : ingress
-      description               : EXPRESS STAGE for internal
-      from_port                 : 13000
-      to_port                   : 13000
+      description               : EXPRESS DEV for internal
+      from_port                 : 63000
+      to_port                   : 63000
       protocol                  : tcp
       ref                       : source_security_group_id
       cidr_blocks               : null
@@ -588,7 +588,7 @@ container                            :
             type            : forward
         GREEN               :
           name              : "${name}-lb-internal-listener-green"
-          port              : 13000
+          port              : 63000
           protocol          : HTTP
           ssl_policy        : ""
           default_action    :
@@ -621,7 +621,7 @@ container                            :
           health_check                  :
             enabled                     : true
             protocol                    : HTTP
-            path                        : /
+            path                        : /healthcheck
             port                        : 3000
             healthy_threshold           : 3
             unhealthy_threshold         : 2
@@ -638,7 +638,7 @@ container                            :
           health_check                  :
             enabled                     : true
             protocol                    : HTTP
-            path                        : /
+            path                        : /healthcheck
             port                        : 3000
             healthy_threshold           : 3
             unhealthy_threshold         : 2
@@ -728,7 +728,7 @@ container                            :
           healthCheck               :
             command                 :
               - CMD-SHELL
-              - curl -f http://localhost:3000 || exit 1
+              - curl -f http://localhost:3000/healthcheck || exit 1
             interval                : 300
             startPeriod             : 30
             retries                 : 3
@@ -801,8 +801,8 @@ container                            :
         assign_public_ip                  : false
       load_balancer                       :
         BLUE:
-          container_name                    : express
-          container_port                    : 3000
+          container_name                  : express
+          container_port                  : 3000
       ref                                 :
         cluster                           : back
         task_definition                   : back
@@ -913,14 +913,14 @@ code_series             :
           <<: *cw_log_pipeline
           stream_name                  : build/front
           status                       : ENABLED
-  deploy                                                 :
-    app                                                  :
-      back                                               :
-        name                                             : "${name}-back"
-        compute_platform                                 : ECS
-      front                                              :
-        name                                             : "${name}-front"
-        compute_platform                                 : ECS
+  deploy                 :
+    app                  :
+      back               :
+        name             : "${name}-back"
+        compute_platform : ECS
+      front              :
+        name             : "${name}-front"
+        compute_platform : ECS
     config                     :
       back                     :
         deployment_config_name : "${name}-back.ECSCanary10Percent1Minutes"
