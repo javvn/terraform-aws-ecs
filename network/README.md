@@ -42,15 +42,15 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_config_file"></a> [config\_file](#input\_config\_file) | n/a | `string` | `"../config.yaml"` | no |
+| <a name="input_config_file"></a> [config\_file](#input\_config\_file) | The configuration for VPC, Subnet, Route Table, Security Group, VPC Endpoint | `string` | `"../config.yaml"` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| <a name="output_route"></a> [route](#output\_route) | n/a |
-| <a name="output_security_groups"></a> [security\_groups](#output\_security\_groups) | n/a |
-| <a name="output_subnet_groups"></a> [subnet\_groups](#output\_subnet\_groups) | n/a |
-| <a name="output_vpc"></a> [vpc](#output\_vpc) | n/a |
-| <a name="output_vpc_endpoint"></a> [vpc\_endpoint](#output\_vpc\_endpoint) | n/a |
+| <a name="output_route"></a> [route](#output\_route) | The  id of Route Table |
+| <a name="output_security_groups"></a> [security\_groups](#output\_security\_groups) | The  id, arn, name, etc.. of Security Group |
+| <a name="output_subnet_groups"></a> [subnet\_groups](#output\_subnet\_groups) | The  id, arn, name, cidr\_block etc.. of Subnet Group |
+| <a name="output_vpc"></a> [vpc](#output\_vpc) | The  arn, cidr\_block, etc.. of VPC |
+| <a name="output_vpc_endpoint"></a> [vpc\_endpoint](#output\_vpc\_endpoint) | The  service\_name of VPC Endpoint |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
