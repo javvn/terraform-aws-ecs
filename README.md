@@ -86,7 +86,6 @@ resource "null_resource" "bastion" {
    }
 }
 ```
-## 결과물
 ## 개선 사항
 ### 인프라 자원 접근 & 제어 및 Automating Terraform
 여전히 Cloud Provider UI & API로 접근 및 제어가 가능하고 이와 같은 자원에 대한 접근은 로그를 남기지 않기 때문에 추적이 불가능한 문제점이 발생한다.
