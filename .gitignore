@@ -4,6 +4,5 @@
 */*.tfstate
 */*.backup
 */*.svg
-image/
 architecture.drawio
 *.bkp

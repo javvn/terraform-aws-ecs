@@ -48,7 +48,7 @@ Back-end Express container 배포 후 HealthCheck가 동작하지 않는 것을 
 이에 대한 해결 방안으로 Dockerfile에 curl 패키지를 설치 명령어를 추가해줬다.
 
 ### CI / CD Pipeline 설계
-![](image/CI CD.png)
+![](image/CICD.png)
 **개발 과정 중 발생한 문제**
 
 1. Docker Hub Rate Policy  
