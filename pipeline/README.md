@@ -39,14 +39,14 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_config_file"></a> [config\_file](#input\_config\_file) | n/a | `string` | `"../config.yaml"` | no |
+| <a name="input_config_file"></a> [config\_file](#input\_config\_file) | The configuration for Code Series(Commit / Build / Deploy / Pipeline) | `string` | `"../config.yaml"` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| <a name="output_build_project"></a> [build\_project](#output\_build\_project) | n/a |
-| <a name="output_deploy"></a> [deploy](#output\_deploy) | n/a |
-| <a name="output_pipeline"></a> [pipeline](#output\_pipeline) | n/a |
-| <a name="output_repository"></a> [repository](#output\_repository) | n/a |
+| <a name="output_build_project"></a> [build\_project](#output\_build\_project) | The arn, name, environment, etc... of CodeBuild Project |
+| <a name="output_deploy"></a> [deploy](#output\_deploy) | The id, arn, name, etc... of CodeDeploy app , config, group |
+| <a name="output_pipeline"></a> [pipeline](#output\_pipeline) | The id, arn of CodePipeline |
+| <a name="output_repository"></a> [repository](#output\_repository) | The id, arn, clone\_url\_ssh, etc... of CodeCommit Repository |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
