@@ -33,12 +33,12 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_config_file"></a> [config\_file](#input\_config\_file) | n/a | `string` | `"../config.yaml"` | no |
+| <a name="input_config_file"></a> [config\_file](#input\_config\_file) | The configuration for CloudWatch, S3 | `string` | `"../config.yaml"` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| <a name="output_cw_log"></a> [cw\_log](#output\_cw\_log) | n/a |
-| <a name="output_s3"></a> [s3](#output\_s3) | n/a |
+| <a name="output_cw_log"></a> [cw\_log](#output\_cw\_log) | The id, arn, name, etc.. of CloudWatch Logs |
+| <a name="output_s3"></a> [s3](#output\_s3) | The  arn, bucket, etc.. of S3 |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
