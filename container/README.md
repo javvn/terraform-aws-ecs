@@ -54,7 +54,7 @@ No modules.
 
 | Name | Description |
 |------|-------------|
-| <a name="output_ecr"></a> [ecr](#output\_ecr) | The output for ECR |
-| <a name="output_ecs"></a> [ecs](#output\_ecs) | The output for ECS |
-| <a name="output_lb"></a> [lb](#output\_lb) | The output for Load Balancer |
+| <a name="output_ecr"></a> [ecr](#output\_ecr) | The id, arn, name, repo\_url, etc.. of ECR repository public / private |
+| <a name="output_ecs"></a> [ecs](#output\_ecs) | The id, arn, name, family, runtime\_platform, etc.. of ECS cluster, service, task\_definition |
+| <a name="output_lb"></a> [lb](#output\_lb) | The id, arn, name, etc.. of LB, target\_group, listener |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
