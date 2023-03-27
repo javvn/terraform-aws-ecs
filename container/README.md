@@ -13,7 +13,6 @@
 | Name | Version |
 |------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | 4.58.0 |
-| <a name="provider_null"></a> [null](#provider\_null) | 3.2.1 |
 | <a name="provider_terraform"></a> [terraform](#provider\_terraform) | n/a |
 
 ## Modules
@@ -43,20 +42,19 @@ No modules.
 | [aws_ssm_parameter.front_listener_arns](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssm_parameter) | resource |
 | [aws_ssm_parameter.front_target_group_names](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssm_parameter) | resource |
 | [aws_ssm_parameter.task_definition_names](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssm_parameter) | resource |
-| [null_resource.ecr_repo_back](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
 | [terraform_remote_state.this](https://registry.terraform.io/providers/hashicorp/terraform/latest/docs/data-sources/remote_state) | data source |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_config_file"></a> [config\_file](#input\_config\_file) | n/a | `string` | `"../config.yaml"` | no |
+| <a name="input_config_file"></a> [config\_file](#input\_config\_file) | The configuration for ALB, ECR, ECS | `string` | `"../config.yaml"` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| <a name="output_ecr"></a> [ecr](#output\_ecr) | n/a |
-| <a name="output_ecs"></a> [ecs](#output\_ecs) | n/a |
-| <a name="output_lb"></a> [lb](#output\_lb) | n/a |
+| <a name="output_ecr"></a> [ecr](#output\_ecr) | The output for ECR |
+| <a name="output_ecs"></a> [ecs](#output\_ecs) | The output for ECS |
+| <a name="output_lb"></a> [lb](#output\_lb) | The output for Load Balancer |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->

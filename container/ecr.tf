@@ -53,19 +53,3 @@ resource "aws_ssm_parameter" "ecr_repository_url" {
 
   depends_on = [aws_ecr_repository.this]
 }
-
-resource "null_resource" "ecr_repo_back" {
-  triggers = {
-    ecr_repo_url = aws_ecr_repository.this["back"].repository_url
-  }
-
-  provisioner "local-exec" {
-    command = "sh ${path.module}/scripts/image-push.sh"
-
-    environment = {
-      REGION         = "us-east-1"
-      REPOSITORY_URL = aws_ecr_repository.this["back"].repository_url
-    }
-  }
-}
-

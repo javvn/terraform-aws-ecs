@@ -44,6 +44,7 @@ resource "aws_ecs_task_definition" "this" {
   cpu                      = each.value.cpu
   memory                   = each.value.memory
   network_mode             = each.value.network_mode
+  skip_destroy             = each.value.skip_destroy
   task_role_arn            = each.value.task_role_arn
   execution_role_arn       = each.value.execution_role_arn
   requires_compatibilities = each.value.requires_compatibilities

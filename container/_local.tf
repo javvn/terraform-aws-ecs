@@ -13,9 +13,8 @@ locals {
   remote_state = { for k, v in data.terraform_remote_state.this : k => v["outputs"] }
 
   remote_path_context = {
-    network  = "${path.module}/${yamldecode(file(var.config_file)).remote_path.network}"
-    log      = "${path.module}/${yamldecode(file(var.config_file)).remote_path.log}"
-    pipeline = "${path.module}/${yamldecode(file(var.config_file)).remote_path.pipeline}"
+    network = "${path.module}/${yamldecode(file(var.config_file)).remote_path.network}"
+    log     = "${path.module}/${yamldecode(file(var.config_file)).remote_path.log}"
   }
 
   resource_context = {
