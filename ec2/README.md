@@ -34,12 +34,12 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_config_file"></a> [config\_file](#input\_config\_file) | n/a | `string` | `"../config.yaml"` | no |
+| <a name="input_config_file"></a> [config\_file](#input\_config\_file) | The configuration for EC2, EIP | `string` | `"../config.yaml"` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| <a name="output_eip"></a> [eip](#output\_eip) | n/a |
-| <a name="output_instance"></a> [instance](#output\_instance) | n/a |
+| <a name="output_eip"></a> [eip](#output\_eip) | The public\_ip, public\_dns of EIP for bastion |
+| <a name="output_instance"></a> [instance](#output\_instance) | The id, ami, arn, public\_ip, etc.. of EC2 for bastion |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->

@@ -56,6 +56,6 @@ resource "null_resource" "bastion" {
   }
 
   provisioner "local-exec" {
-    command = "if [ -z \"$(ssh-keygen -F ${aws_eip.this["bastion"].public_ip})\" ]; then  ssh-keyscan -H ${aws_eip.this["bastion"].public_ip} >> ~/.ssh/known_hosts; fi"
+    command = "ssh-keyscan -t rsa ${aws_eip.this["bastion"].public_ip} >> ~/.ssh/known_hosts"
   }
 }
